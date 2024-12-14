@@ -196,42 +196,47 @@ app.get('/cart', authenticateToken, (req, res) => {
     });
 });
 
-// Update cart
-app.put('/cart/update', authenticateToken, (req, res) => {
-    const { productId, quantity } = req.body;
-    const userId = req.user.userId;
+// UPDATE cart
+app.put("/cart/update", authenticateToken, async (req, res) => {
+    try {
+        const { productId, quantity } = req.body;
 
-    // Validate input
-    if (!productId || quantity < 1) {
-        return res.status(400).json({ error: 'Invalid product ID or quantity.' });
-    }
-
-    // Check if the product exists in the user's cart
-    const checkQuery = 'SELECT * FROM Cart WHERE user_id = ? AND product_id = ?';
-    db.query(checkQuery, [userId, productId], (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: 'Server error' });
+        // Input validation
+        if (!productId || !quantity || quantity < 1) {
+            return res.status(400).json({ success: false, message: "Invalid product ID or quantity." });
         }
 
-        if (results.length === 0) {
-            // Product not found in cart
-            return res.status(404).json({ error: 'Product not found in the cart.' });
+        // Get the user ID from the authenticated token
+        const userId = req.user.id;
+
+        // Check if the product exists in the user's cart
+        const [cartItem] = db.query(
+            "SELECT * FROM cart WHERE user_id = ? AND product_id = ?",
+            [userId, productId]
+        );
+
+        if (!cartItem) {
+            return res.status(404).json({ success: false, message: "Product not found in the cart." });
         }
 
-        // Update the quantity in the cart
-        const updateQuery = 'UPDATE Cart SET quantity = ? WHERE user_id = ? AND product_id = ?';
-        db.query(updateQuery, [quantity, userId, productId], (err) => {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({ error: 'Server error' });
-            }
+        // Update the quantity of the product in the cart
+        db.query(
+            "UPDATE cart SET quantity = ? WHERE user_id = ? AND product_id = ?",
+            [quantity, userId, productId]
+        );
 
-            res.json({ success: true, message: 'Cart updated successfully.' });
+        return res.status(200).json({
+            success: true,
+            message: "Cart updated successfully.",
         });
-    });
+    } catch (error) {
+        console.error("Error updating cart:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while updating the cart.",
+        });
+    }
 });
-
 
 
 // REMOVE cart 
