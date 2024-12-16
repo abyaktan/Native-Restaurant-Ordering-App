@@ -37,6 +37,11 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
+const Joi = require('joi');
+const registerSchema = Joi.object({
+    name: Joi.string().min(3).max(30).required(),
+    password: Joi.string().min(8).required()
+});
 
 // Registration endpoint
 app.post('/register', async (req, res) => {
@@ -50,13 +55,13 @@ app.post('/register', async (req, res) => {
         db.query(query, [username, hashedPassword], (err, results) => {
             if (err) {
                 console.error('Database error:', err); // Log the error for debugging
-                return res.status(500).json({ error: 'Server error' });
+                return res.status(401).json({ message: 'Invalid credentials' });
             }
             res.json({ message: 'User registered successfully' });
         });
     } catch (err) {
         console.error('Error during registration:', err); // Log error
-        return res.status(500).json({ error: 'Registration failed' });
+        return res.status(401).json({ message: 'Invalid credentials' });
     }
 });
 
@@ -83,18 +88,18 @@ app.post('/login', loginLimiter, [
     db.query(query, [username], async (err, results) => {
         if (err) {
             console.error('Database error:', err); // Log error
-            return res.status(500).json({ error: 'Server error' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         if (results.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         const user = results[0];
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.hashed_password);
-        if (!isMatch) return res.status(401).json({ error: 'Invalid password' });
+        if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
         // JWT generation
         const token = jwt.sign({ userId: user.user_id }, JWT_SECRET, { expiresIn: '1h' });
@@ -105,10 +110,10 @@ app.post('/login', loginLimiter, [
 // middleware for Token Verification
 const authenticateToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Access denied' });
+    if (!token) return res.status(401).json({ message: 'Invalid credentials' });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
+        if (err) return res.status(401).json({ message: 'Invalid credentials' });
         req.user = user;
         next();
     });
@@ -120,7 +125,7 @@ app.get('/products', (req, res) => {
     db.query(query, (err, results) => {
         if (err) {
             console.error('Database error:', err);
-            return res.status(500).json({ error: 'Server error' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
         res.json(results);
     });
@@ -144,7 +149,7 @@ app.post('/add-product', [
     db.query(query, [name, description, price, image_url], (err, results) => {
         if (err) {
             console.error('Database error:', err); // Log the error for debugging
-            return res.status(500).json({ error: 'Database error' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
         res.status(201).json({ message: 'Product added successfully', productId: results.insertId });
     });
@@ -167,14 +172,14 @@ app.post('/cart/add', authenticateToken, (req, res) => {
 
             const updateQuery = 'UPDATE Cart SET quantity = ? WHERE user_id = ? AND product_id = ?';
             db.query(updateQuery, [newQuantity, userId, productId], (err, updateResults) => {
-                if (err) return res.status(500).json({ error: 'Server error' });
+                if (err) return res.status(401).json({ message: 'Invalid credentials' });
                 res.json({ message: 'Cart updated successfully', updatedQuantity: newQuantity });
             });
         } else {
             // If the product does not exist, insert a new row
             const insertQuery = 'INSERT INTO Cart (user_id, product_id, quantity) VALUES (?, ?, ?)';
             db.query(insertQuery, [userId, productId, quantity], (err, insertResults) => {
-                if (err) return res.status(500).json({ error: 'Server error' });
+                if (err) return res.status(401).json({ message: 'Invalid credentials' });
                 res.json({ message: 'Product added to cart' });
             });
         }
@@ -189,7 +194,7 @@ app.put('/cart/update', authenticateToken, (req, res) => {
 
     // Validate input
     if (!productId || quantity < 1) {
-        return res.status(400).json({ error: 'Invalid product ID or quantity.' });
+        return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Check if the product exists in the user's cart
@@ -197,12 +202,12 @@ app.put('/cart/update', authenticateToken, (req, res) => {
     db.query(checkQuery, [userId, productId], (err, results) => {
         if (err) {
             console.error('Database error:', err);
-            return res.status(500).json({ error: 'Server error' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         if (results.length === 0) {
             // Product not found in cart
-            return res.status(404).json({ error: 'Product not found in the cart.' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         // Update the quantity in the cart
@@ -210,7 +215,7 @@ app.put('/cart/update', authenticateToken, (req, res) => {
         db.query(updateQuery, [quantity, userId, productId], (err) => {
             if (err) {
                 console.error('Database error:', err);
-                return res.status(500).json({ error: 'Server error' });
+                return res.status(401).json({ message: 'Invalid credentials' });
             }
 
             res.json({ success: true, message: 'Cart updated successfully.' });
@@ -230,7 +235,7 @@ app.get('/cart', authenticateToken, (req, res) => {
         WHERE Cart.user_id = ?
     `;
     db.query(query, [userId], (err, results) => {
-        if (err) return res.status(500).json({ error: 'Server error' });
+        if (err) return res.status(401).json({ message: 'Invalid credentials' });
         res.json(results);
     });
 });
@@ -243,7 +248,10 @@ app.delete('/cart/remove', authenticateToken, (req, res) => {
 
     const query = 'DELETE FROM Cart WHERE user_id = ? AND product_id = ?';
     db.query(query, [userId, productId], (err, results) => {
-        if (err) return res.status(500).json({ error: 'Server error' });
+        if (err) return res.status(401).json({ message: 'Invalid credentials' });
         res.json({ message: 'Product removed from cart' });
     });
 });
+
+const morgan = require('morgan');
+app.use(morgan('combined')); // Logs all incoming requests
