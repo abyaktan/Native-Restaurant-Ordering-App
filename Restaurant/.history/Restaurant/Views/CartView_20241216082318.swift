@@ -3,6 +3,7 @@ import SwiftUI
 struct CartView: View {
     @StateObject private var viewModel = CartViewModel()
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("authToken") private var authToken: String?
     
     var body: some View {
         ZStack {

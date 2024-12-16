@@ -1,29 +1,15 @@
 import Foundation
-import PassKit
 
 @MainActor
 class CartViewModel: ObservableObject {
     @Published var cartItems: [CartItem] = []
     @Published var isLoading = false
     @Published var error: String?
-    @Published var showCheckoutSuccess = false
     
     var total: Double {
         cartItems.reduce(0) { sum, item in
             sum + (Double(item.quantity) * item.priceAsDouble)
         }
-    }
-    
-    var formattedTotal: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = "."
-        formatter.decimalSeparator = ","
-        
-        if let formattedString = formatter.string(from: NSNumber(value: total)) {
-            return "Rp \(formattedString)"
-        }
-        return "Rp 0"
     }
     
     private let networkManager = NetworkManager.shared
@@ -46,29 +32,38 @@ class CartViewModel: ObservableObject {
         error = nil
         
         do {
-            try await networkManager.removeFromCart(productId: item.productId)
+            // Remove locally first for better UX
             if let index = cartItems.firstIndex(where: { $0.id == item.id }) {
                 cartItems.remove(at: index)
             }
+            
+            // Then update server
+            try await networkManager.removeFromCart(name: item.name)
         } catch {
+            // Refresh the cart if the server update fails
+            await fetchCart()
             self.error = error.localizedDescription
         }
         
         isLoading = false
     }
     
-    
     func updateQuantity(for item: CartItem, newQuantity: Int) async {
         guard newQuantity > 0 else { return }
         
         do {
-            try await networkManager.updateCartQuantity(productId: item.productId, quantity: newQuantity)
-            
+            // Update locally first for better UX
             if let index = cartItems.firstIndex(where: { $0.id == item.id }) {
-                let updatedItem = CartItem(productId: item.productId, name: item.name, price: item.price, quantity: newQuantity, imageUrl: item.imageUrl)
+                var updatedItem = item
+                updatedItem = CartItem(name: item.name, price: item.price, quantity: newQuantity)
                 cartItems[index] = updatedItem
             }
+            
+            // Then update server
+            try await networkManager.updateCartQuantity(name: item.name, quantity: newQuantity)
         } catch {
+            // Refresh the cart if the server update fails
+            await fetchCart()
             self.error = error.localizedDescription
         }
     }

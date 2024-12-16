@@ -224,7 +224,7 @@ app.get('/cart', authenticateToken, (req, res) => {
     const userId = req.user.userId;
 
     const query = `
-        SELECT Products.product_id, Products.name, Products.price, Cart.quantity
+        SELECT Products.name, Products.price, Cart.quantity
         FROM Cart
         JOIN Products ON Cart.product_id = Products.product_id
         WHERE Cart.user_id = ?
@@ -236,7 +236,7 @@ app.get('/cart', authenticateToken, (req, res) => {
 });
 
 
-// REMOVE product from cart 
+// REMOVE cart (OPTIONAL, ADMIN FEATURE MUST PRESENT)
 app.delete('/cart/remove', authenticateToken, (req, res) => {
     const { productId } = req.body;
     const userId = req.user.userId;

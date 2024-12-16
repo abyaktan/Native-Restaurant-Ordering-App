@@ -24,10 +24,6 @@ class NetworkManager {
         self.authToken = nil
     }
     
-    func logout() {
-        clearAuthToken()
-    }
-    
     private func createRequest(_ endpoint: String, method: String = "GET", body: Data? = nil) -> URLRequest? {
         guard let url = URL(string: baseURL + endpoint) else { return nil }
         var request = URLRequest(url: url)
@@ -138,6 +134,8 @@ class NetworkManager {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
+        print("Cart Response Data:", String(data: data, encoding: .utf8) ?? "Could not convert data to string")
+        
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NetworkError.serverError("Invalid response")
         }
@@ -150,7 +148,13 @@ class NetworkManager {
             throw NetworkError.serverError("Server error: \(httpResponse.statusCode)")
         }
         
-        return try JSONDecoder().decode([CartItem].self, from: data)
+        do {
+            let items = try JSONDecoder().decode([CartItem].self, from: data)
+            return items
+        } catch {
+            print("Decoding Error:", error)
+            throw NetworkError.decodingError
+        }
     }
     
     func addToCart(productId: Int, quantity: Int) async throws {

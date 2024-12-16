@@ -43,7 +43,7 @@ struct CartView: View {
                                 
                                 Spacer()
                                 
-                                Text(viewModel.formattedTotal)
+                                Text("Rp. \(String(format: "%.0f", viewModel.total))")
                                     .font(.title2)
                                     .fontWeight(.bold)
                             }
@@ -74,30 +74,11 @@ struct CartItemRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            if let imageUrl = item.imageUrl,
-               let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
-                } placeholder: {
-                    Color.gray.opacity(0.3)
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
-                }
-            } else {
-                Color.gray.opacity(0.3)
-                    .frame(width: 80, height: 80)
-                    .cornerRadius(8)
-            }
-            
             VStack(alignment: .leading, spacing: 8) {
                 Text(item.name)
                     .font(.headline)
                 
-                Text(item.formattedPrice)
+                Text("Rp. \(item.price)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
@@ -140,7 +121,8 @@ struct CartItemRow: View {
         .shadow(radius: 2)
         .padding(.horizontal)
     }
-} 
+}
+
 struct CartView_Previews: PreviewProvider {
     static var previews: some View {
         CartView()

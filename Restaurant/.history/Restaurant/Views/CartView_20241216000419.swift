@@ -43,10 +43,24 @@ struct CartView: View {
                                 
                                 Spacer()
                                 
-                                Text(viewModel.formattedTotal)
+                                Text("Rp. \(String(format: "%.0f", viewModel.total))")
                                     .font(.title2)
                                     .fontWeight(.bold)
                             }
+                            
+//                            Button(action: {
+//                                Task {
+//                                    await viewModel.checkout()
+//                                }
+//                            }) {
+//                                Text("Checkout with Apple Pay")
+//                                    .fontWeight(.semibold)
+//                                    .frame(maxWidth: .infinity)
+//                                    .padding()
+//                                    .background(Color.blue)
+//                                    .foregroundColor(.white)
+//                                    .cornerRadius(10)
+//                            }
                         }
                         .padding()
                     }
@@ -64,6 +78,13 @@ struct CartView: View {
         } message: {
             Text(viewModel.error ?? "")
         }
+        .alert("Success", isPresented: $viewModel.showCheckoutSuccess) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your order has been placed successfully!")
+        }
     }
 }
 
@@ -74,19 +95,17 @@ struct CartItemRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            if let imageUrl = item.imageUrl,
+            if let imageUrl = item.product?.imageUrl,
                let url = URL(string: imageUrl) {
                 AsyncImage(url: url) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
                 } placeholder: {
                     Color.gray.opacity(0.3)
-                        .frame(width: 80, height: 80)
-                        .cornerRadius(8)
                 }
+                .frame(width: 80, height: 80)
+                .cornerRadius(8)
             } else {
                 Color.gray.opacity(0.3)
                     .frame(width: 80, height: 80)
@@ -94,10 +113,10 @@ struct CartItemRow: View {
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                Text(item.name)
+                Text(item.product?.name ?? "")
                     .font(.headline)
                 
-                Text(item.formattedPrice)
+                Text("Rp. \(String(format: "%.0f", item.product?.price ?? 0))")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 

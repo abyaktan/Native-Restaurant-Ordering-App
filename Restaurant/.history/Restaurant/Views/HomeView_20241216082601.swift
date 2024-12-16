@@ -41,9 +41,7 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        Task {
-                            await authManager.logout()
-                        }
+                        authManager.logout()
                     }) {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
                     }

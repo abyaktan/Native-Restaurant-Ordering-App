@@ -24,10 +24,6 @@ class NetworkManager {
         self.authToken = nil
     }
     
-    func logout() {
-        clearAuthToken()
-    }
-    
     private func createRequest(_ endpoint: String, method: String = "GET", body: Data? = nil) -> URLRequest? {
         guard let url = URL(string: baseURL + endpoint) else { return nil }
         var request = URLRequest(url: url)

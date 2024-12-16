@@ -65,7 +65,7 @@ class CartViewModel: ObservableObject {
             try await networkManager.updateCartQuantity(productId: item.productId, quantity: newQuantity)
             
             if let index = cartItems.firstIndex(where: { $0.id == item.id }) {
-                let updatedItem = CartItem(productId: item.productId, name: item.name, price: item.price, quantity: newQuantity, imageUrl: item.imageUrl)
+                let updatedItem = CartItem(productId: item.productId, name: item.name, price: item.price, quantity: newQuantity)
                 cartItems[index] = updatedItem
             }
         } catch {

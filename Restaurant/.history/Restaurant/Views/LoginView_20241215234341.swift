@@ -20,6 +20,11 @@ struct LoginView: View {
                             .frame(width: 120, height: 120)
                             .padding(.bottom, 20)
                         
+                        // App Title
+//                        Text("Saung Simbok")
+//                            .font(.system(size: 40, weight: .bold))
+//                            .foregroundColor(.primary)
+                        
                         VStack(spacing: 20) {
                             // Username field
                             TextField("Username", text: $viewModel.username)
@@ -53,17 +58,6 @@ struct LoginView: View {
                             .cornerRadius(10)
                             .padding(.horizontal)
                             .disabled(viewModel.isLoading)
-                            
-                            // Divider with "or" text
-                            HStack {
-                                VStack { Divider() }.padding(.horizontal)
-                                Text("or")
-                                    .foregroundColor(.secondary)
-                                    .font(.subheadline)
-                                VStack { Divider() }.padding(.horizontal)
-                            }
-                            .padding(.vertical, 8)
-                            
                             
                             // Register button
                             NavigationLink(destination: RegistrationView()) {
@@ -105,14 +99,18 @@ struct LoginView: View {
             )
             .navigationBarHidden(true)
         }
+        .onChange(of: authManager.isAuthenticated) { isAuthenticated in
+            if isAuthenticated {
+                viewModel.loginSuccess = true
+            }
+        }
         .fullScreenCover(isPresented: $viewModel.loginSuccess) {
             HomeView()
         }
     }
-}
+} 
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
         LoginView()
-            .environmentObject(AuthenticationManager.shared)
     }
 }

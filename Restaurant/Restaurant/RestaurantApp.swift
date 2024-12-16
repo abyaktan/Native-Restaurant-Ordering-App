@@ -17,8 +17,10 @@ struct RestaurantApp: App {
                 Group {
                     if authManager.isAuthenticated {
                         HomeView()
+                            .environmentObject(authManager)
                     } else {
                         LoginView()
+                            .environmentObject(authManager)
                     }
                 }
             }

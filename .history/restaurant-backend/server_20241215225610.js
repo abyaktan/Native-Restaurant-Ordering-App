@@ -98,13 +98,13 @@ app.post('/login', loginLimiter, [
 
         // JWT generation
         const token = jwt.sign({ userId: user.user_id }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ success:true, token });
+        res.json({ token });
     });
 });
 
 // middleware for Token Verification
 const authenticateToken = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const token = req.headers['authorization'];
     if (!token) return res.status(401).json({ error: 'Access denied' });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -155,66 +155,10 @@ app.post('/cart/add', authenticateToken, (req, res) => {
     const { productId, quantity } = req.body;
     const userId = req.user.userId;
 
-    // Check if the product already exists in the cart
-    const checkQuery = 'SELECT quantity FROM Cart WHERE user_id = ? AND product_id = ?';
-    db.query(checkQuery, [userId, productId], (err, results) => {
+    const query = 'INSERT INTO Cart (user_id, product_id, quantity) VALUES (?, ?, ?)';
+    db.query(query, [userId, productId, quantity], (err, results) => {
         if (err) return res.status(500).json({ error: 'Server error' });
-
-        if (results.length > 0) {
-            // If the product exists, update the quantity
-            const currentQuantity = results[0].quantity;
-            const newQuantity = currentQuantity + quantity;
-
-            const updateQuery = 'UPDATE Cart SET quantity = ? WHERE user_id = ? AND product_id = ?';
-            db.query(updateQuery, [newQuantity, userId, productId], (err, updateResults) => {
-                if (err) return res.status(500).json({ error: 'Server error' });
-                res.json({ message: 'Cart updated successfully', updatedQuantity: newQuantity });
-            });
-        } else {
-            // If the product does not exist, insert a new row
-            const insertQuery = 'INSERT INTO Cart (user_id, product_id, quantity) VALUES (?, ?, ?)';
-            db.query(insertQuery, [userId, productId, quantity], (err, insertResults) => {
-                if (err) return res.status(500).json({ error: 'Server error' });
-                res.json({ message: 'Product added to cart' });
-            });
-        }
-    });
-});
-
-
-// Update cart
-app.put('/cart/update', authenticateToken, (req, res) => {
-    const { productId, quantity } = req.body;
-    const userId = req.user.userId;
-
-    // Validate input
-    if (!productId || quantity < 1) {
-        return res.status(400).json({ error: 'Invalid product ID or quantity.' });
-    }
-
-    // Check if the product exists in the user's cart
-    const checkQuery = 'SELECT * FROM Cart WHERE user_id = ? AND product_id = ?';
-    db.query(checkQuery, [userId, productId], (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: 'Server error' });
-        }
-
-        if (results.length === 0) {
-            // Product not found in cart
-            return res.status(404).json({ error: 'Product not found in the cart.' });
-        }
-
-        // Update the quantity in the cart
-        const updateQuery = 'UPDATE Cart SET quantity = ? WHERE user_id = ? AND product_id = ?';
-        db.query(updateQuery, [quantity, userId, productId], (err) => {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({ error: 'Server error' });
-            }
-
-            res.json({ success: true, message: 'Cart updated successfully.' });
-        });
+        res.json({ message: 'Product added to cart' });
     });
 });
 
@@ -224,7 +168,7 @@ app.get('/cart', authenticateToken, (req, res) => {
     const userId = req.user.userId;
 
     const query = `
-        SELECT Products.product_id, Products.name, Products.price, Cart.quantity
+        SELECT Products.name, Products.price, Cart.quantity
         FROM Cart
         JOIN Products ON Cart.product_id = Products.product_id
         WHERE Cart.user_id = ?
@@ -236,7 +180,7 @@ app.get('/cart', authenticateToken, (req, res) => {
 });
 
 
-// REMOVE product from cart 
+// REMOVE cart (OPTIONAL, ADMIN FEATURE MUST PRESENT)
 app.delete('/cart/remove', authenticateToken, (req, res) => {
     const { productId } = req.body;
     const userId = req.user.userId;

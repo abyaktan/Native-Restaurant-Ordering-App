@@ -14,18 +14,6 @@ class CartViewModel: ObservableObject {
         }
     }
     
-    var formattedTotal: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = "."
-        formatter.decimalSeparator = ","
-        
-        if let formattedString = formatter.string(from: NSNumber(value: total)) {
-            return "Rp \(formattedString)"
-        }
-        return "Rp 0"
-    }
-    
     private let networkManager = NetworkManager.shared
     
     func fetchCart() async {
@@ -57,6 +45,16 @@ class CartViewModel: ObservableObject {
         isLoading = false
     }
     
+    // func incrementQuantity(for item: CartItem) async {
+    //     let newQuantity = item.quantity + 1
+    //     await updateQuantity(for: item, newQuantity: newQuantity)
+    // }
+    
+    // func decrementQuantity(for item: CartItem) async {
+    //     guard item.quantity > 1 else { return }
+    //     let newQuantity = item.quantity - 1
+    //     await updateQuantity(for: item, newQuantity: newQuantity)
+    // }
     
     func updateQuantity(for item: CartItem, newQuantity: Int) async {
         guard newQuantity > 0 else { return }
@@ -65,7 +63,7 @@ class CartViewModel: ObservableObject {
             try await networkManager.updateCartQuantity(productId: item.productId, quantity: newQuantity)
             
             if let index = cartItems.firstIndex(where: { $0.id == item.id }) {
-                let updatedItem = CartItem(productId: item.productId, name: item.name, price: item.price, quantity: newQuantity, imageUrl: item.imageUrl)
+                let updatedItem = CartItem(productId: item.productId, name: item.name, price: item.price, quantity: newQuantity)
                 cartItems[index] = updatedItem
             }
         } catch {
