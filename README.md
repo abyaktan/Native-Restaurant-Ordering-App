@@ -22,17 +22,17 @@ A native mobile restaurant ordering application built using Swift (iOS) and Kotl
 ## 📦 How to Run the Project
 
 ### iOS (Swift)
-1. Open the Xcode project in `/ios`
+1. Open the Xcode project in `/Restaurant`
 2. Install necessary dependencies
 3. Run the app on Simulator or connected device
 
 ### Android (Kotlin)
-1. Open Android Studio and load `/android` folder
+1. Open Android Studio and load `/nativerestaurant` folder
 2. Sync Gradle and build the project
 3. Run on Emulator or physical device
 
 ### Backend (Node.js + MySQL)
-1. Navigate to `/backend`
+1. Navigate to `/restaurant-backend`
 2. Run `npm install`
 3. Configure `.env` for MySQL connection
 4. Start server with `npm start`
